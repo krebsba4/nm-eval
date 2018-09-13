@@ -1,2 +1,2 @@
-# nm_eval
+# nm-eval
 eval
