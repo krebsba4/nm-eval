@@ -1,0 +1,13 @@
+<form class="cat-search-input">
+	<mat-form-field class="cat-search-input">
+		<input matInput placeholder="Search Input" class="form-control" [(ngModel)]="searchInput" name="searchInput" #name="ngModel">
+	</mat-form-field>
+</form>
+<h2 mat-line>Cats List</h2>
+<mat-list>
+	<mat-list-item *ngFor="let cat of cats | listFilter:searchInput">
+		<img mat-list-avatar src="{{cat.file}}">
+		<a mat-line href="{{cat.file}}" target="_blank">{{cat.id}}</a>
+	</mat-list-item>
+</mat-list>
+
