@@ -1,10 +1,10 @@
 package com.nm.service;
 
-import java.util.List;
-
 import com.nm.model.Cat;
+
+import reactor.core.publisher.Flux;
 
 public interface CatPictureService {
 
-	List<Cat> getRandomCatPictures(int numberOfPictures);
+	Flux<Cat> getRandomCatPictures(int numberOfPictures);
 }

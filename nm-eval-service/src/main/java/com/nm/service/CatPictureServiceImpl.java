@@ -1,30 +1,43 @@
 package com.nm.service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
+import com.nm.exceptions.CatStoppedWorkingException;
 import com.nm.model.Cat;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
+@Slf4j
 @Service("catPictureService")
+@AllArgsConstructor
 public class CatPictureServiceImpl implements CatPictureService {
 
-	private final String RANDOM_CAT_PICTURE_URL = "https://aws.random.cat/meow";
-
-	@Autowired
-	private RestTemplate restTemplate;
+	private final String RANDOM_CAT_PICTURE_URL;
+	private final WebClient webClient;
 
 	@Override
 	@Cacheable("cats")
-	public List<Cat> getRandomCatPictures(int numberOfPictures) {
-		ArrayList<Cat> catPictureList = new ArrayList<>();
-		for (int i = 0; i < numberOfPictures; i++) {
-			catPictureList.add(restTemplate.getForObject(RANDOM_CAT_PICTURE_URL, Cat.class));
-		}
-		return catPictureList;
+	public Flux<Cat> getRandomCatPictures(int numberOfPictures) {
+		return Flux.fromIterable(Collections.nCopies(numberOfPictures, 0)).parallel().runOn(Schedulers.boundedElastic())
+				.flatMap(this::getRandomCat).sequential();
+	}
+
+	private Mono<Cat> getRandomCat(int randomInt) {
+		return webClient
+				.get()
+				.uri(RANDOM_CAT_PICTURE_URL)
+				.retrieve()
+				.onStatus(HttpStatus::isError, response -> Mono.error(new CatStoppedWorkingException("Cat web service no work.")))
+				.bodyToMono(Cat.class)
+				.doOnError(error -> log.error("Error calling cat web service {}", error.getLocalizedMessage()));
 	}
 }
